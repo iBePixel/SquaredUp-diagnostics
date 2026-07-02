@@ -934,7 +934,7 @@ async function process(file) {
     setMsg('Reading zip…');
     const buf = await file.arrayBuffer();
 
-    setMsg('Extracting files…');
+    setMsg('Extracting files.…');
     const { files, allNames } = await parseZip(buf);
 
     setMsg('Parsing logs…');
