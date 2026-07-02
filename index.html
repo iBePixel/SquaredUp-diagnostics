@@ -604,7 +604,7 @@ function analyse(files, allNames) {
 
   // ── Logs ───────────────────────────────────────────────────────────────────
   const entries  = parseLogs(files);
-  const errors   = entries.filter(e => e.level === 'ERR' || e.level === 'FTL');
+  const errors   = entries.filter(e => (e.level === 'ERR' || e.level === 'FTL') && !/AJAX exception/i.test(e.msg));
   const warnings = entries.filter(e => e.level === 'WRN');
   const errGroups = groupEntries(errors);
   const wrnGroups = groupEntries(warnings);
