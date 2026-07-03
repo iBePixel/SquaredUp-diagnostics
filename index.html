@@ -448,7 +448,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 // ─── ZIP PARSER ─────────────────────────────────────────────────────────────
 const TD = new TextDecoder('utf-8', { fatal: false });
 
-// Detect UTF-16 LE/BE BOM and decode accordingly; fall back to UTF-8
+// Detect UTF-16 LE/BE BOM and decode accordingly; fall back to UTF-8 
 function decodeBuf(bytes) {
   if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE)
     return new TextDecoder('utf-16le').decode(bytes);
