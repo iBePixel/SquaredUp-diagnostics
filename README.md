@@ -22,7 +22,19 @@ Drag a diagnostics `.zip` onto the page (or browse to select one) and it will:
 - **Analyse database health**, flagging "database is locked" events and index connection threshold breaches, including peak/average hold times.
 - **Detect High Availability role**, identifying whether the package came from a primary or secondary node (and flagging conflicting/split-brain signals) based on log evidence.
 - **Check reference packages** for duplicates — leftover copies from a failed upgrade or manual re-import that can indicate configuration drift.
+- **Generate a PowerShell cleanup script** for duplicate reference packages — see below.
 - **Surface system information** (version, server, and other environment details) pulled from `Overview.txt` / `SquaredUpDiags.txt`.
+
+### Duplicate reference package cleanup script
+
+When duplicate reference packages are detected, a **Generate PowerShell cleanup script** button appears in the Reference Packages section. It builds a `.ps1` script and displays it in a modal (with Copy and Download options) rather than downloading it automatically.
+
+The script is tailored to the specific diagnostics package:
+- It only targets exact-version duplicates — files like `Auditing_6.0.0-1.zip`, `-2.zip`, `-3.zip`, etc. — created when a package is re-imported. It always keeps the original, unsuffixed copy (`Auditing_6.0.0.zip`) and never touches genuinely different versions of a package.
+- It pre-fills `$ReferencePackagesPath` using the physical directory detected from `SquaredUpDiags.txt` (`Detected Squared Up physical directory: ...`), joined with `User\ReferencePackages`. If that couldn't be detected, the path defaults to a placeholder with a note to update it before running.
+- It supports `-WhatIf` (via `[CmdletBinding(SupportsShouldProcess)]`) so the customer can preview exactly what would be deleted before committing.
+
+This script is meant to be handed to a customer to run on their SquaredUp server to clean up leftover duplicate packages.
 
 ## Usage
 
