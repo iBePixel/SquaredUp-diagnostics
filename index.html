@@ -228,6 +228,19 @@ button { font-family: inherit; cursor: pointer; }
 .ctx-block.open { display: block; }
 .ctx-errline { color: #f87171; }
 .occ-more { padding: 8px 22px; font-size: 11px; color: var(--text-3); font-style: italic; }
+.nearby-block { white-space: normal; padding: 6px 8px; }
+.nearby-row { display: flex; align-items: baseline; gap: 8px; padding: 2px 4px; border-radius: 4px; }
+.nearby-ts { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.nearby-lvl {
+  font-size: 9.5px; font-weight: 700; padding: 0 5px; border-radius: 3px; flex-shrink: 0;
+  text-transform: uppercase; background: var(--surface-3); color: var(--text-2);
+}
+.nearby-lvl.lvl-err { background: var(--error-dim); color: var(--error); }
+.nearby-lvl.lvl-wrn { background: var(--warn-dim); color: var(--warn); }
+.nearby-msg { font-size: 11px; color: #7da3c2; white-space: pre-wrap; word-break: break-word; }
+.nearby-row.nearby-self { background: var(--accent-dim); }
+.nearby-row.nearby-self .nearby-msg { color: var(--text); font-weight: 600; }
+.nearby-empty { padding: 4px; font-size: 11px; color: var(--text-3); font-style: italic; }
 
 /* Package section */
 .pkg-body { padding: 14px 16px; }
@@ -555,6 +568,7 @@ function parseLogs(files) {
   }
 
   entries.sort((a, b) => a.ts - b.ts);
+  entries.forEach((e, i) => { e.idx = i; });
   return entries;
 }
 
@@ -758,7 +772,7 @@ function analyse(files, allNames) {
     totalErr: errors.length, totalWrn: warnings.length,
     refPkgs, dupGroups, dupFilesToDelete, physicalDir,
     db: { locked, idxThres, maxMs, avgMs, maxEntry },
-    logDates
+    logDates, timeline: entries
   };
 }
 
@@ -796,6 +810,7 @@ function renderGroup(g, cntCls) {
 
   const occs = newestFirst.slice(0, show).map(e => {
     const ctxId = uid();
+    const nearId = uid();
     const hasCtx = e.ctx.length > 0;
     const ctxRaw = [e.msg, ...e.ctx].join('\n');
     // Highlight first line (the exception type) vs rest
@@ -811,8 +826,10 @@ function renderGroup(g, cntCls) {
         <span class="occ-ts">${ts(e.ts)}</span>
         <span class="occ-msg" title="${esc(e.msg)}">${esc(e.msg.substring(0,80))}${e.msg.length>80?'…':''}</span>
         ${hasCtx ? `<button class="btn-ctx" onclick="toggleCtx('${ctxId}',this)">context ▾</button>` : ''}
+        ${e.idx != null ? `<button class="btn-ctx" onclick="toggleNearby(${e.idx},'${nearId}',this)">nearby ▾</button>` : ''}
       </div>
       ${hasCtx ? `<div class="ctx-block" id="${ctxId}">${ctxHtml}</div>` : ''}
+      ${e.idx != null ? `<div class="ctx-block nearby-block" id="${nearId}"></div>` : ''}
     </div>`;
   }).join('');
 
@@ -1009,6 +1026,35 @@ function toggleCtx(cid, btn) {
   const el = document.getElementById(cid);
   el.classList.toggle('open');
   btn.textContent = el.classList.contains('open') ? 'context ▴' : 'context ▾';
+}
+
+// Builds a ±10 line window of the full log timeline around a given entry, so an
+// occurrence can be seen in the context of everything else that was happening.
+function buildNearbyHtml(idx) {
+  const timeline = currentAnalysis && currentAnalysis.timeline;
+  if (!timeline || !timeline.length) return '<div class="nearby-empty">Log timeline unavailable</div>';
+  const start = Math.max(0, idx - 10);
+  const end = Math.min(timeline.length - 1, idx + 10);
+  const rows = [];
+  for (let i = start; i <= end; i++) {
+    const e = timeline[i];
+    rows.push(`<div class="nearby-row${i === idx ? ' nearby-self' : ''}">
+      <span class="nearby-ts">${ts(e.ts)}</span>
+      <span class="nearby-lvl lvl-${e.level.toLowerCase()}">${esc(e.level)}</span>
+      <span class="nearby-msg">${esc(e.msg)}</span>
+    </div>`);
+  }
+  return rows.join('');
+}
+
+function toggleNearby(idx, nid, btn) {
+  const el = document.getElementById(nid);
+  if (!el.dataset.built) {
+    el.innerHTML = buildNearbyHtml(idx);
+    el.dataset.built = '1';
+  }
+  el.classList.toggle('open');
+  btn.textContent = el.classList.contains('open') ? 'nearby ▴' : 'nearby ▾';
 }
 
 // ─── FILE PROCESSING ────────────────────────────────────────────────────────
