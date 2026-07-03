@@ -790,10 +790,11 @@ function tsShort(d) { return d ? d.toISOString().slice(0,16).replace('T',' ') : 
 
 function renderGroup(g, cntCls) {
   const bid = uid(); const headId = uid();
-  const show = Math.min(g.entries.length, 250);
-  const hasMore = g.entries.length > 250;
+  const newestFirst = [...g.entries].reverse();
+  const show = Math.min(newestFirst.length, 250);
+  const hasMore = newestFirst.length > 250;
 
-  const occs = g.entries.slice(0, show).map(e => {
+  const occs = newestFirst.slice(0, show).map(e => {
     const ctxId = uid();
     const hasCtx = e.ctx.length > 0;
     const ctxRaw = [e.msg, ...e.ctx].join('\n');
@@ -828,7 +829,7 @@ function renderGroup(g, cntCls) {
     </div>
     <div class="grp-body" id="${bid}">
       <div class="occ-list">${occs}</div>
-      ${hasMore ? `<div class="occ-more">Showing first 250 of ${g.entries.length} occurrences</div>` : ''}
+      ${hasMore ? `<div class="occ-more">Showing most recent 250 of ${g.entries.length} occurrences</div>` : ''}
     </div>
   </div>`;
 }
